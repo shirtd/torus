@@ -17,7 +17,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import sys
 import time
 
-MIN_PERS = 3
+MIN_PERS = 0.01
 SCALE = 1
 
 # options
@@ -113,7 +113,7 @@ def pers(pairs, a_last, a):
         death_norm = pair.death_norm
         # if (death.time - birth.time > 0):
         #     pairs_time += [(birth.time,death.time)]
-        if (death.index - birth.index < MIN_PERS):
+        if (death_norm - birth_norm < MIN_PERS):
             noise += 1
         elif (a_last < death.filtration) and (death.filtration <= a):
             features += 1
@@ -271,12 +271,12 @@ def import_file(dir_name):
             else:
                 print("ERROR(pairs)@"+member)
         # pcs = [birth.pcs[i]+death.pcs[i] for i in range(min(len(birth.pcs),len(death.pcs)))]
-        if (death.index - birth.index < MIN_PERS):
-            pair = Pair(birth,death,nsimplices)
+        pair = Pair(birth,death,nsimplices)
+        if (pair.death_norm - pair.birth_norm >= MIN_PERS):
             pairs += [pair]
 
     npairs = len(pairs)
-    print(str(npairs) + " pairs")
+    print(str(npairs) + " features (MIN_PERS = "+str(MIN_PERS)+")")
     return vertices, edges, simplices, pairs
 
 def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
