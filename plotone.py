@@ -271,8 +271,9 @@ def import_file(dir_name):
             else:
                 print("ERROR(pairs)@"+member)
         # pcs = [birth.pcs[i]+death.pcs[i] for i in range(min(len(birth.pcs),len(death.pcs)))]
-        pair = Pair(birth,death,nsimplices)
-        pairs += [pair]
+        if (death.index - birth.index < MIN_PERS):
+            pair = Pair(birth,death,nsimplices)
+            pairs += [pair]
 
     npairs = len(pairs)
     print(str(npairs) + " pairs")
