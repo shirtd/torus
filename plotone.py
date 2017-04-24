@@ -73,7 +73,7 @@ def init_plot():
     pax.cla()
     pax.set_xlim([-0.1,1.0])
     pax.set_ylim([-0.1,1.0])
-    clr = [0,0,0,1]
+    clr = [0,0,0,0.2]
     pax.plot([-1,1],[-1,1],color=clr)
 
 init_plot()
@@ -143,7 +143,7 @@ def pers(pairs, a_last, a):
                 else :
                     clr = [0,0,1,0.25]
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    pax.scatter(birth_norm,death_norm,marker='o',s=(5*death.dim)**2)
+                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=(5*death.dim)**2)
                     if BANDD:
                         pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
                 i += 1
@@ -154,7 +154,7 @@ def pers(pairs, a_last, a):
                 else :
                     clr = [0,1,0,0.1]
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    pax.scatter(birth_norm,death_norm,marker='o',s=(5*death.dim)**2)
+                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=(5*death.dim)**2)
                     if BANDD:
                         pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
                 i += 1
