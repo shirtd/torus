@@ -45,7 +45,7 @@ class Pair:
         self.birth_norm = birth_norm
         self.death_norm = death_norm
 
-MIN_PERS = 10
+MIN_PERS = 15
 SCALE = 1
 
 # options
@@ -368,9 +368,9 @@ vertices, edges, simplices, pairs = import_file(dirname)
 for v in vertices:
     drawvertex(v)
 
-reso = 10
+reso = 20
 start_time = time.time()
-for i in range(reso-2):
+for i in range(reso-3):
     a_last = (i-1)/reso
     a_cur = i/reso
     # draw(name, vertices, edges, simplices, pairs, i-1, a_last, a_cur)

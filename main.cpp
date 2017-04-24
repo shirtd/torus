@@ -22,7 +22,7 @@ int main(int argc, char * argv[]) {
 
     cout << filename << " (" << file << ")" << endl;
 
-    int dim = 2;
+    int dim = 3;
     // persistence over e?
     // (strict edge condition)
     double _e = 0.0;
@@ -62,8 +62,8 @@ int main(int argc, char * argv[]) {
     clock_t t1,t2;
     t1=clock();
     //code goes here
-    double reso = 10;
-    for (int i = 1; i < reso-2; i++) {
+    double reso = 20;
+    for (int i = 1; i < reso-3; i++) {
         double a = static_cast<double>(i)/(reso);
         cout << "_a = " << a << " ... ";
         graph->_a = a;
