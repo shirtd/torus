@@ -10,16 +10,9 @@ from math import pi
 from math import sin
 from math import cos
 
-import re
-
-import math
-import re
-
-# import wave
-# import pyaudio
-# import soundfile as sf
-
 from random import randrange, uniform
+
+import sys
 
 PLOT = False
 WRITE = True
@@ -28,7 +21,11 @@ sample = []
 X = []
 Y = []
 Z = []
-nsamples = 300
+nsamples = 50
+
+if (len(sys.argv) == 2):
+    nsamples = int(sys.argv[1])
+
 for i in range(nsamples):
     u = uniform(0,2*pi)
     v = uniform(0,2*pi)

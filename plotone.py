@@ -17,7 +17,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import sys
 import time
 
-MIN_PERS = 15
+MIN_PERS = 3
 SCALE = 1
 
 # options
@@ -53,11 +53,11 @@ class Simplex:
         self.filtration = filtration
 
 class Pair:
-    def __init__(self, birth, death, birth_norm, death_norm):
+    def __init__(self, birth, death, nsimplices):
         self.birth = birth
         self.death = death
-        self.birth_norm = birth_norm
-        self.death_norm = death_norm
+        self.birth_norm = birth.index/nsimplices
+        self.death_norm = death.index/nsimplices
 
 fig = plt.figure(figsize=(16, 8))
 ax1 = fig.add_subplot(121, projection='3d')
@@ -94,8 +94,10 @@ def drawface(s):
         u = s.vertices[0]
         v = s.vertices[1]
         w = s.vertices[2]
-        clr = [1,0,0,0.007]
-        e_clr = [0,1,0,0.02]
+        # clr = [1,0,0,0.007]
+        # e_clr = [0,1,0,0.02]
+        clr = [1,0,0,0.5]
+        e_clr = [0,1,0.5]
         ax1.plot_trisurf([u.x, v.x, w.x], [u.y, v.y, w.y], [u.z, v.z, w.z],
                         color=clr,edgecolor=e_clr, shade=False)
 
@@ -115,14 +117,16 @@ def pers(pairs, a_last, a):
             noise += 1
         elif (a_last < death.filtration) and (death.filtration <= a):
             features += 1
+            opac = 0.2 + 4*(pair.death_norm - pair.birth_norm)/5
+            sze = 30*death.dim**2
             if (death.dim == 1) and EDGE_PERS:
                 if BARCODE:
                     # pax.plot([T[birth],T[death]],[i,i],color=colors[itop[birth]])
                     pax.plot([birth_norm,death_norm],[death_norm,death_norm])
                 else :
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    clr = [0,1,0,1]
-                    pax.scatter(birth_norm,death_norm,marker='x',color=clr,s=(5*death.dim)**2)
+                    clr = [0,1,0,opac]
+                    pax.scatter(birth_norm,death_norm,marker='x',color=clr,s=sze)
                     if BANDD:
                         pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
                 i += 1
@@ -132,8 +136,8 @@ def pers(pairs, a_last, a):
                     pax.plot([birth_norm,death_norm],[death_norm,death_norm])
                 else :
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    clr = [1,0,0,0.7]
-                    pax.scatter(birth_norm,death_norm,marker='^',color=clr,s=(5*death.dim)**2)
+                    clr = [1,0,0,opac]
+                    pax.scatter(birth_norm,death_norm,marker='^',color=clr,s=sze)
                     if BANDD:
                         pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
                 i += 1
@@ -142,9 +146,9 @@ def pers(pairs, a_last, a):
                     # pax.plot([T[birth],T[death]],[i,i],color=colors[itop[birth]])
                     pax.plot([birth_norm,death_norm],[death_norm,death_norm])
                 else :
-                    clr = [0,0,1,0.25]
+                    clr = [0,0,1,opac]
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=(5*death.dim)**2)
+                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=sze)
                     if BANDD:
                         pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
                 i += 1
@@ -153,9 +157,9 @@ def pers(pairs, a_last, a):
                     # pax.plot([T[birth],T[death]],[i,i],color=colors[itop[birth]])
                     pax.plot([birth_norm,death_norm],[death_norm,death_norm])
                 else :
-                    clr = [0,1,0,0.1]
+                    clr = [0,1,0,opac]
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=(5*death.dim)**2)
+                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=sze)
                     if BANDD:
                         pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
                 i += 1
@@ -267,7 +271,7 @@ def import_file(dir_name):
             else:
                 print("ERROR(pairs)@"+member)
         # pcs = [birth.pcs[i]+death.pcs[i] for i in range(min(len(birth.pcs),len(death.pcs)))]
-        pair = Pair(birth,death,birth_norm,death_norm)
+        pair = Pair(birth,death,nsimplices)
         pairs += [pair]
 
     npairs = len(pairs)
@@ -309,18 +313,10 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
     # if (len(pairs) > 0):
     #     noise_ratio = noise/len(pairs)
 
-    a_text = pax.text(1.02, 1-0.40, "  _a = "+str(a),
+    a_text = pax.text(1.02, 1-0.60, "  _a = "+str(a),
             horizontalalignment='left',
             verticalalignment='top',
             transform=pax.transAxes)
-    # noise_text = pax.text(1.02, 1-0.46, "noise ~ "+str(round(100*noise_ratio))+'%',
-    #         horizontalalignment='left',
-    #         verticalalignment='top',
-    #         transform=pax.transAxes)
-    # kgt_text = pax.text(1.02, 1-0.5, "   kgt ~ "+str(round(100*kgt))+'%',
-    #         horizontalalignment='left',
-    #         verticalalignment='top',
-    #         transform=pax.transAxes)
 
     # png_path = dir_name+"plot"+".png"
     png_path = "data/"+str(name)+"-"
@@ -340,8 +336,6 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
     plt.savefig(png_path)
 
     a_text.remove()
-    # noise_text.remove()
-    # kgt_text.remove()
     # f = open("data/stats.txt","a+")
     # f.write(dir_name+"\t"+png_path+"\t"+str(kgt)+"\t"+str(noise_ratio)+"\n")
     # f.close()
@@ -351,27 +345,44 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
 
     return del_edge, del_simplex, del_pair
 
-dirname = "data/orus/"
-name = 'orus'
-count = 0
-_a = 0
+# dirname = "data/orus/"
+name = 'torus'
+reso = 10
+frames = reso
 if (len(sys.argv) == 2):
-    dirname = sys.argv[1]
+    name = sys.argv[1]
 elif (len(sys.argv) == 2):
-    dirname = sys.argv[1]
-    _a = float(sys.argv[2])
+    name = sys.argv[1]
+    reso = int(sys.argv[2])
 elif (len(sys.argv) == 3):
-    dirname = sys.argv[1]
-    _a = float(sys.argv[2])
-    count = int(sys.argv[3])
+    name = sys.argv[1]
+    reso = int(sys.argv[2])
+    frames = int(sys.argv[3])
 
+dirname = "data/"+name+"/"
 vertices, edges, simplices, pairs = import_file(dirname)
 for v in vertices:
     drawvertex(v)
 
-reso = 20
+nvertices = len(vertices)
+nsimplices = len(simplices)
+npairs = len(pairs)
+
+vertex_text = pax.text(1.02, 1-0.46, str(nvertices)+" vertices",
+        horizontalalignment='left',
+        verticalalignment='top',
+        transform=pax.transAxes)
+simplex_text = pax.text(1.02, 1-0.5, str(nsimplices)+" smplcs",
+        horizontalalignment='left',
+        verticalalignment='top',
+        transform=pax.transAxes)
+pair_text = pax.text(1.02, 1-0.54, str(npairs)+" pairs",
+        horizontalalignment='left',
+        verticalalignment='top',
+        transform=pax.transAxes)
+
 start_time = time.time()
-for i in range(reso-2):
+for i in range(frames):
     a_last = (i-1)/reso
     a_cur = i/reso
     # draw(name, vertices, edges, simplices, pairs, i-1, a_last, a_cur)

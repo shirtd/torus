@@ -11,16 +11,18 @@
 #include <time.h>
 
 int main(int argc, char * argv[]) {
-    const char* filename;
+    const char* name;
     if (argc > 1)
-        filename = argv[1];
-    else filename = "torus.txt";
+        name = argv[1];
+    else name = "torus";
 
-    std::string filename_string = std::string(filename);
-    char* filename_copy = const_cast<char*>(filename_string.c_str());
-    char* file = strtok(filename_copy, ".txt");
+    string name_string = string(name);
+    string filename_string = name_string+".txt";
+    // filename = const_cast<char*>(filename_string.c_str());
+    const char* filename = filename_string.c_str();
+    // char* file = strtok(filename_copy, ".txt");
 
-    // cout << filename << " (" << file << ")" << endl;
+    cout << name << " (" << filename << ")" << endl;
 
     int dim = 2;
     // persistence over e?
@@ -28,9 +30,9 @@ int main(int argc, char * argv[]) {
     double _e = 0.0;
     double _a = 0.0;
 
-    if (argc > 2) _e = strtod(argv[2], NULL);
-    if (argc > 3) _a = strtod(argv[3], NULL);
-    if (argc > 4) dim = strtod(argv[4], NULL);
+    if (argc > 2) dim = strtod(argv[2], NULL);
+    // if (argc > 2) _e = strtod(argv[3], NULL);
+    // if (argc > 3) _a = strtod(argv[4], NULL);
 
     // cout << "_e = " << _e << endl;
 
@@ -106,7 +108,7 @@ int main(int argc, char * argv[]) {
 
     t1=clock();
 
-    graph->write(file);
+    graph->write(name);
 
     t2=clock();
     diff = ((float)t2-(float)t1);

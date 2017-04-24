@@ -41,7 +41,7 @@ public:
 
     void persist();
 
-    void write(char* file);
+    void write(const char* file);
 
  private:
 
@@ -246,7 +246,7 @@ void Graph::persist() {
     }
 }
 
-void Graph::write(char* file) {
+void Graph::write(const char* file) {
     string data_dir_string = "data/";
     const char* data_dir = data_dir_string.c_str();
     if (!dir_exists(data_dir)) _mkdir(data_dir);
@@ -259,10 +259,13 @@ void Graph::write(char* file) {
 
     // const char* file_dir_suffix = file_dir_suffix_string.c_str();
     // int length = strlen(data_dir)+strlen(file)+strlen(file_dir_suffix)+1;
-    int length = strlen(data_dir)+strlen(file);
-    char file_dir [length];
-    strcpy(file_dir, data_dir);
-    strcat(file_dir, file);
+    string file_string = string(file);
+    string file_dir_string = data_dir_string+file_string+"/";
+    const char* file_dir = file_dir_string.c_str();
+    // int length = strlen(data_dir)+strlen(file);
+    // char file_dir [length];
+    // strcpy(file_dir, data_dir);
+    // strcat(file_dir, file);
     // strcat(file_dir, file_dir_suffix);
 
     // int order = 10;
@@ -293,7 +296,7 @@ void Graph::write(char* file) {
     string ext_string = ".txt";
     // const char* ext = ext_string.c_str();
 
-    const char* const_file_dir = const_cast<const char*>(file_dir);
+    // const char* file_dir = const_cast<const char*>(file_dir);
 
     vector<string> file_strings;
     file_strings.push_back("vertices");
@@ -309,10 +312,10 @@ void Graph::write(char* file) {
         string file_name_string = "/"+file_strings[j]+ext_string;
         // const char* file_name = file_strings[j].c_str();
         const char* file_name = file_name_string.c_str();
-        path_length = strlen(const_file_dir)+strlen(file_name);
+        path_length = strlen(file_dir)+strlen(file_name);
         // char* path = new char [path_length]();
         char path [path_length];
-        strcpy(path, const_file_dir);
+        strcpy(path, file_dir);
         // strcat(path, "/");
         strcat(path, file_name);
         // strcat(path, ext);
@@ -338,9 +341,9 @@ void Graph::write(char* file) {
     //     string j_string = to_string(j);
     //     const char* j_char = j_string.c_str();
     //     const char* file_name = pair_string.c_str();
-    //     path_length = strlen(const_file_dir)+strlen(j_char)+strlen(file_name)+strlen(ext)+1;
+    //     path_length = strlen(file_dir)+strlen(j_char)+strlen(file_name)+strlen(ext)+1;
     //     path = new char [path_length];
-    //     strcpy(path, const_file_dir);
+    //     strcpy(path, file_dir);
     //     strcat(path, "/");
     //     strcat(path,j_char);
     //     strcat(path, file_name);
@@ -368,9 +371,9 @@ void Graph::write(char* file) {
     //
     // string norm_pair_string = "pairs_norm";
     // const char* file_name = norm_pair_string.c_str();
-    // path_length = strlen(const_file_dir)+strlen(file_name)+strlen(ext)+1;
+    // path_length = strlen(file_dir)+strlen(file_name)+strlen(ext)+1;
     // path = new char [path_length];
-    // strcpy(path, const_file_dir);
+    // strcpy(path, file_dir);
     // strcat(path, "/");
     // strcat(path, file_name);
     // strcat(path, ext);
