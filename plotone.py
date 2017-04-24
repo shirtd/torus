@@ -23,7 +23,7 @@ SCALE = 1
 # options
 VERTEX = True
 EDGE = True
-FACE = False
+FACE = True
 EDGE_PERS = True
 FACE_PERS = True
 VOL_PERS = True
@@ -351,7 +351,7 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
 
     return del_edge, del_simplex, del_pair
 
-dirname = "data/orus_0/"
+dirname = "data/orus/"
 name = 'orus'
 count = 0
 _a = 0
