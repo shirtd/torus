@@ -12,10 +12,24 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 # import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.cm as cm
+# import matplotlib.cm as cm
 
 import sys
 import time
+
+MIN_PERS = 15
+SCALE = 1
+
+# options
+VERTEX = True
+EDGE = True
+FACE = False
+EDGE_PERS = True
+FACE_PERS = True
+VOL_PERS = True
+STEREO = True
+BARCODE = False
+BANDD = False
 
 class Vertex:
     def __init__(self, x, y, z, index):
@@ -45,30 +59,17 @@ class Pair:
         self.birth_norm = birth_norm
         self.death_norm = death_norm
 
-MIN_PERS = 15
-SCALE = 1
-
-# options
-VERTEX = True
-EDGE = True
-FACE = True
-EDGE_PERS = True
-FACE_PERS = True
-VOL_PERS = True
-STEREO = True
-BARCODE = False
-BANDD = False
-
 fig = plt.figure(figsize=(16, 8))
 ax1 = fig.add_subplot(121, projection='3d')
 pax = fig.add_subplot(122)
 
 def init_plot():
     ax1.cla()
-    ax1.set_xlim([-1.0,1.0])
-    ax1.set_ylim([-1.0,1.0])
-    ax1.set_zlim([-1.0,1.0])
-    ax1.elev = 30.0
+    bound = 0.7
+    ax1.set_xlim([-bound,bound])
+    ax1.set_ylim([-bound,bound])
+    ax1.set_zlim([-bound,bound])
+    ax1.elev = 35.0
 
     pax.cla()
     pax.set_xlim([-0.1,1.0])
@@ -81,11 +82,11 @@ init_plot()
 def drawvertex(u):
     if VERTEX:
         clr = [0,0,1,1]
-        ax1.scatter([u.x], [u.y], [u.z],color=clr)
+        ax1.scatter([u.x], [u.y], [u.z],color=clr,s=5)
 
 def drawedge(e):
     if EDGE:
-        clr = [0,1,0,1]
+        clr = [0,1,0,0.5]
         ax1.plot([e.u.x,e.v.x],[e.u.y,e.v.y],[e.u.z,e.v.z], color=clr)
 
 def drawface(s):
@@ -93,7 +94,7 @@ def drawface(s):
         u = s.vertices[0]
         v = s.vertices[1]
         w = s.vertices[2]
-        clr = [1,0,0,0.01]
+        clr = [1,0,0,0.007]
         e_clr = [0,1,0,0.02]
         ax1.plot_trisurf([u.x, v.x, w.x], [u.y, v.y, w.y], [u.z, v.z, w.z],
                         color=clr,edgecolor=e_clr, shade=False)
@@ -131,7 +132,7 @@ def pers(pairs, a_last, a):
                     pax.plot([birth_norm,death_norm],[death_norm,death_norm])
                 else :
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    clr = [1,0,0,0.5]
+                    clr = [1,0,0,0.7]
                     pax.scatter(birth_norm,death_norm,marker='^',color=clr,s=(5*death.dim)**2)
                     if BANDD:
                         pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
@@ -297,29 +298,29 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
             elif s.dim < 2:
                 del_simplex += [s]
 
-    if (nsimplices > 0):
-        kgt = (nsimplices - nedges - nvertices)/nsimplices
-    else:
-        kgt = 0.0
+    # if (nsimplices > 0):
+    #     kgt = (nsimplices - nedges - nvertices)/nsimplices
+    # else:
+    #     kgt = 0.0
 
     features, noise, del_pair = pers(pairs, a_last, a)
 
-    noise_ratio = 1
-    if (len(pairs) > 0):
-        noise_ratio = noise/len(pairs)
+    # noise_ratio = 1
+    # if (len(pairs) > 0):
+    #     noise_ratio = noise/len(pairs)
 
     a_text = pax.text(1.02, 1-0.40, "  _a = "+str(a),
             horizontalalignment='left',
             verticalalignment='top',
             transform=pax.transAxes)
-    noise_text = pax.text(1.02, 1-0.46, "noise ~ "+str(round(100*noise_ratio))+'%',
-            horizontalalignment='left',
-            verticalalignment='top',
-            transform=pax.transAxes)
-    kgt_text = pax.text(1.02, 1-0.5, "   kgt ~ "+str(round(100*kgt))+'%',
-            horizontalalignment='left',
-            verticalalignment='top',
-            transform=pax.transAxes)
+    # noise_text = pax.text(1.02, 1-0.46, "noise ~ "+str(round(100*noise_ratio))+'%',
+    #         horizontalalignment='left',
+    #         verticalalignment='top',
+    #         transform=pax.transAxes)
+    # kgt_text = pax.text(1.02, 1-0.5, "   kgt ~ "+str(round(100*kgt))+'%',
+    #         horizontalalignment='left',
+    #         verticalalignment='top',
+    #         transform=pax.transAxes)
 
     # png_path = dir_name+"plot"+".png"
     png_path = "data/"+str(name)+"-"
@@ -339,8 +340,8 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
     plt.savefig(png_path)
 
     a_text.remove()
-    noise_text.remove()
-    kgt_text.remove()
+    # noise_text.remove()
+    # kgt_text.remove()
     # f = open("data/stats.txt","a+")
     # f.write(dir_name+"\t"+png_path+"\t"+str(kgt)+"\t"+str(noise_ratio)+"\n")
     # f.close()
@@ -370,7 +371,7 @@ for v in vertices:
 
 reso = 20
 start_time = time.time()
-for i in range(reso-3):
+for i in range(reso-2):
     a_last = (i-1)/reso
     a_cur = i/reso
     # draw(name, vertices, edges, simplices, pairs, i-1, a_last, a_cur)

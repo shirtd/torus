@@ -28,14 +28,14 @@ sample = []
 X = []
 Y = []
 Z = []
-nsamples = 100
+nsamples = 300
 for i in range(nsamples):
     u = uniform(0,2*pi)
     v = uniform(0,2*pi)
     sample += [(u,v)]
     # print("("+str(u)+", "+str(v)+")")
-    x = (0.5 + 0.16*cos(u))*cos(v)
-    y = (0.5 + 0.16*cos(u))*sin(v)
+    x = (0.6 + 0.16*cos(u))*cos(v)
+    y = (0.6 + 0.16*cos(u))*sin(v)
     z = 0.16*sin(u)
     X += [x]
     Y += [y]

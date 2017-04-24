@@ -1,0 +1,4 @@
+-Iinclude
+-I/usr/local/include
+-Isource
+-Wunused-function

@@ -75,11 +75,16 @@ Graph::~Graph() {
     // std::cout << "deleted vertices." << std::endl;
 
     // std::cout << "\tdeleting edges ... " << std::endl;
-    // for (vector<Edge*>::iterator
-    //      i = edges.begin(), e = edges.end();
-    //      i != e; ++i)
-    //     delete (*i);
+    for (vector<Edge*>::iterator
+         i = edges.begin(), e = edges.end();
+         i != e; ++i)
+        delete (*i);
     // std::cout << "deleted edges." << std::endl;
+
+    for (vector<Simplex*>::iterator
+         i = simplices.begin(), e = simplices.end();
+         i != e; ++i)
+        delete (*i);
 }
 
 Vertex* Graph::sample_vertex(Point<double,3> p) {
@@ -246,46 +251,47 @@ void Graph::write(char* file) {
     const char* data_dir = data_dir_string.c_str();
     if (!dir_exists(data_dir)) _mkdir(data_dir);
 
-    int i = 0;
-    string file_dir_suffix_string = "_" +
-            // to_string_double(_e) + "_" +
-            // to_string_double(_a) + "_" +
-            to_string(i);
+    // int i = 0;
+    // string file_dir_suffix_string = "_" +
+    //         // to_string_double(_e) + "_" +
+    //         // to_string_double(_a) + "_" +
+    //         to_string(i);
 
-    const char* file_dir_suffix = file_dir_suffix_string.c_str();
-    int length = strlen(data_dir)+strlen(file)+strlen(file_dir_suffix);
-    char file_dir [length+10];
+    // const char* file_dir_suffix = file_dir_suffix_string.c_str();
+    // int length = strlen(data_dir)+strlen(file)+strlen(file_dir_suffix)+1;
+    int length = strlen(data_dir)+strlen(file);
+    char file_dir [length];
     strcpy(file_dir, data_dir);
     strcat(file_dir, file);
-    strcat(file_dir, file_dir_suffix);
+    // strcat(file_dir, file_dir_suffix);
 
-    int order = 10;
-    while(dir_exists(file_dir)) {
-        i += 1;
-        if (i >= 100) {
-            i = 0;
-            std::cout <<
-                "WARNING starting overwrite" <<
-            std::endl;
-            break;
-        }
-        if (i%order == 0) {
-            if (i == order)
-                length += 1;
-            string mult_string = to_string(i/order);
-            char mult = mult_string.c_str()[0];
-            file_dir[length-2] = mult;
-        }
-
-        string i_string = to_string(i%10);
-        char i_char = i_string.c_str()[0];
-        file_dir[length-1] = i_char;
-    }
+    // int order = 10;
+    // while(dir_exists(file_dir)) {
+    //     i += 1;
+    //     if (i >= 100) {
+    //         i = 0;
+    //         std::cout <<
+    //             "WARNING starting overwrite" <<
+    //         std::endl;
+    //         break;
+    //     }
+    //     if (i%order == 0) {
+    //         if (i == order)
+    //             length += 1;
+    //         string mult_string = to_string(i/order);
+    //         char mult = mult_string.c_str()[0];
+    //         file_dir[length-2] = mult;
+    //     }
+    //
+    //     string i_string = to_string(i%10);
+    //     char i_char = i_string.c_str()[0];
+    //     file_dir[length-1] = i_char;
+    // }
 
     _mkdir(file_dir);
 
     string ext_string = ".txt";
-    const char* ext = ext_string.c_str();
+    // const char* ext = ext_string.c_str();
 
     const char* const_file_dir = const_cast<const char*>(file_dir);
 
@@ -297,13 +303,19 @@ void Graph::write(char* file) {
     // file_strings.push_back("stats");
     int nfiles = file_strings.size();
 
+    // char* path;
+    int path_length;
     for (int j = 0; j < nfiles; j++) {
-        const char* file_name = file_strings[j].c_str();
-        char* path = new char [strlen(const_file_dir)+strlen(file_name)+strlen(ext)+1];
+        string file_name_string = "/"+file_strings[j]+ext_string;
+        // const char* file_name = file_strings[j].c_str();
+        const char* file_name = file_name_string.c_str();
+        path_length = strlen(const_file_dir)+strlen(file_name);
+        // char* path = new char [path_length]();
+        char path [path_length];
         strcpy(path, const_file_dir);
-        strcat(path, "/");
+        // strcat(path, "/");
         strcat(path, file_name);
-        strcat(path, ext);
+        // strcat(path, ext);
 
         // // <editor-fold> PRINT WRITE
         // std::cout << "  -> writing to " << path <<
@@ -321,64 +333,66 @@ void Graph::write(char* file) {
         // delete [] path;
     }
 
-    string pair_string = "pair";
-    for (int j = 0; j < dim; j++) {
-        string j_string = to_string(j);
-        const char* j_char = j_string.c_str();
-        const char* file_name = pair_string.c_str();
-        char* path = new char [strlen(const_file_dir)+strlen(j_char)+strlen(file_name)+strlen(ext)+1];
-        strcpy(path, const_file_dir);
-        strcat(path, "/");
-        strcat(path,j_char);
-        strcat(path, file_name);
-        strcat(path, ext);
-
-        double nsimplices = simplices.size();
-
-        ofstream myfile;
-        myfile.open(path);
-        for (int k = 0; k < pairs.get_num_pairs(); k++) {
-            int birthi = pairs.get_pair(k).first;
-            int deathi = pairs.get_pair(k).second;
-            if (simplices[birthi]->dim == j){
-                double birth = static_cast<double>(birthi)/nsimplices;
-                double death = static_cast<double>(deathi)/nsimplices;
-                if (death - birth > (j+2)/nsimplices)
-                    myfile << birth << " " << death << "\n";
-                // myfile << birth << " " << death << "\n";
-            }
-
-        }
-        myfile.close();
-        // delete [] path;
-    }
-
-    string norm_pair_string = "pairs_norm";
-    const char* file_name = norm_pair_string.c_str();
-    char* path = new char [strlen(const_file_dir)+strlen(file_name)+strlen(ext)+1];
-    strcpy(path, const_file_dir);
-    strcat(path, "/");
-    strcat(path, file_name);
-    strcat(path, ext);
-
-    double nsimplices = simplices.size();
-
-    ofstream myfile;
-    myfile.open(path);
-    for (int k = 0; k < pairs.get_num_pairs(); k++) {
-        int birthi = pairs.get_pair(k).first;
-        int deathi = pairs.get_pair(k).second;
-        // if (simplices[birthi]->pc() == simplices[deathi]->pc()) {
-        double birth = static_cast<double>(birthi)/nsimplices;
-        double death = static_cast<double>(deathi)/nsimplices;
-        // double thresh = static_cast<double>(simplices[deathi]->dim)/nsimplices;
-        // if (death - birth > thresh)
-        //     myfile << birth << " " << death << "\n";
-        myfile << birth << " " << death << "\n";
-        // }
-
-    }
-    myfile.close();
+    // string pair_string = "pair";
+    // for (int j = 0; j < dim; j++) {
+    //     string j_string = to_string(j);
+    //     const char* j_char = j_string.c_str();
+    //     const char* file_name = pair_string.c_str();
+    //     path_length = strlen(const_file_dir)+strlen(j_char)+strlen(file_name)+strlen(ext)+1;
+    //     path = new char [path_length];
+    //     strcpy(path, const_file_dir);
+    //     strcat(path, "/");
+    //     strcat(path,j_char);
+    //     strcat(path, file_name);
+    //     strcat(path, ext);
+    //
+    //     double nsimplices = simplices.size();
+    //
+    //     ofstream myfile;
+    //     myfile.open(path);
+    //     for (int k = 0; k < pairs.get_num_pairs(); k++) {
+    //         int birthi = pairs.get_pair(k).first;
+    //         int deathi = pairs.get_pair(k).second;
+    //         if (simplices[birthi]->dim == j){
+    //             double birth = static_cast<double>(birthi)/nsimplices;
+    //             double death = static_cast<double>(deathi)/nsimplices;
+    //             if (death - birth > (j+2)/nsimplices)
+    //                 myfile << birth << " " << death << "\n";
+    //             // myfile << birth << " " << death << "\n";
+    //         }
+    //
+    //     }
+    //     myfile.close();
+    //     // delete [] path;
+    // }
+    //
+    // string norm_pair_string = "pairs_norm";
+    // const char* file_name = norm_pair_string.c_str();
+    // path_length = strlen(const_file_dir)+strlen(file_name)+strlen(ext)+1;
+    // path = new char [path_length];
+    // strcpy(path, const_file_dir);
+    // strcat(path, "/");
+    // strcat(path, file_name);
+    // strcat(path, ext);
+    //
+    // double nsimplices = simplices.size();
+    //
+    // ofstream myfile;
+    // myfile.open(path);
+    // for (int k = 0; k < pairs.get_num_pairs(); k++) {
+    //     int birthi = pairs.get_pair(k).first;
+    //     int deathi = pairs.get_pair(k).second;
+    //     // if (simplices[birthi]->pc() == simplices[deathi]->pc()) {
+    //     double birth = static_cast<double>(birthi)/nsimplices;
+    //     double death = static_cast<double>(deathi)/nsimplices;
+    //     // double thresh = static_cast<double>(simplices[deathi]->dim)/nsimplices;
+    //     // if (death - birth > thresh)
+    //     //     myfile << birth << " " << death << "\n";
+    //     myfile << birth << " " << death << "\n";
+    //     // }
+    //
+    // }
+    // myfile.close();
 
     // delete [] path;
 }

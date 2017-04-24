@@ -20,9 +20,9 @@ int main(int argc, char * argv[]) {
     char* filename_copy = const_cast<char*>(filename_string.c_str());
     char* file = strtok(filename_copy, ".txt");
 
-    cout << filename << " (" << file << ")" << endl;
+    // cout << filename << " (" << file << ")" << endl;
 
-    int dim = 3;
+    int dim = 2;
     // persistence over e?
     // (strict edge condition)
     double _e = 0.0;
@@ -32,7 +32,7 @@ int main(int argc, char * argv[]) {
     if (argc > 3) _a = strtod(argv[3], NULL);
     if (argc > 4) dim = strtod(argv[4], NULL);
 
-    cout << "_e = " << _e << endl;
+    // cout << "_e = " << _e << endl;
 
     Graph* graph = new Graph(dim, _e, _a);
 
@@ -47,13 +47,18 @@ int main(int argc, char * argv[]) {
         p[2] = z;
         graph->sample_vertex(p);
     }
+    infile.close();
 
     int nvertices = graph->vertices.size();
+    int nsimplices = graph->simplices.size();
 
     cout << nvertices << " vertices" << endl;
-    // cout << graph->simplices.size() << endl;
+    cout << graph->simplices.size() << " simplices" << endl;
 
     double added [nvertices][nvertices];
+    for (int i = 0; i < nvertices; i++) {
+        std::fill(added[i], added[i]+nvertices, 0);
+    }
 
     // REDUNDANT
     // each edge is only added once
@@ -63,7 +68,7 @@ int main(int argc, char * argv[]) {
     t1=clock();
     //code goes here
     double reso = 20;
-    for (int i = 1; i < reso-3; i++) {
+    for (int i = 1; i < reso-2; i++) {
         double a = static_cast<double>(i)/(reso);
         cout << "_a = " << a << " ... ";
         graph->_a = a;
@@ -81,7 +86,8 @@ int main(int argc, char * argv[]) {
                 }
             }
         }
-        cout << graph->simplices.size() << " simplices" << endl;
+        nsimplices = graph->simplices.size();
+        cout << nsimplices << " simplices" << endl;
     }
 
     t2=clock();
