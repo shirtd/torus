@@ -1,0 +1,10 @@
+#!/bin/bash
+rm $1.mp4
+cd data
+echo
+echo " $ RUNNING ffmpeg -r 12 -i $1-%06d.png -vcodec mpeg4 -y $1.mp4"
+echo
+ffmpeg -r 1 -i $1-%06d.png -vcodec mpeg4 -y $1.mp4
+cp $1.mp4 ../
+cd ..
+open $1.mp4
