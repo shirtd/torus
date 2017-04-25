@@ -1,0 +1,19 @@
+#!/bin/bash
+./gentest.sh 0.4 0.1
+./gentest.sh 0.4 0.2
+./gentest.sh 0.4 0.3
+./gentest.sh 0.5 0.1
+./gentest.sh 0.5 0.2
+./gentest.sh 0.5 0.3
+./gentest.sh 0.5 0.4
+./gentest.sh 0.6 0.1
+./gentest.sh 0.6 0.2
+./gentest.sh 0.6 0.3
+./gentest.sh 0.6 0.4
+./gentest.sh 0.6 0.5
+./gentest.sh 0.7 0.1
+./gentest.sh 0.7 0.2
+./gentest.sh 0.7 0.3
+./gentest.sh 0.7 0.4
+./gentest.sh 0.7 0.5
+./gentest.sh 0.7 0.6

@@ -17,6 +17,8 @@ public:
     // vector<Sample*> samples;
     // double time;
 
+    recursive_mutex mutex;
+
     int index;
     set<Vertex*> adjacent;
 
@@ -29,6 +31,7 @@ public:
 
     // void addsample(Point<double> p, Sample* s);
     bool is_adjacent(Vertex* v);
+    bool is_adjacent(int i);
 
     // double* pcs();
     // int pc();
@@ -58,11 +61,20 @@ bool Vertex::is_adjacent(Vertex* v) {
     return false;
 }
 
+bool Vertex::is_adjacent(int i) {
+    lock_guard<recursive_mutex> guard(mutex);
+    std::set<Vertex*>::iterator it;
+    for (it = adjacent.begin(); it != adjacent.end(); ++it)
+        if ((*it)->index == i) return true;
+    return false;
+}
+
 class Edge {
 public:
     Vertex* u;
     Vertex* v;
     // double time;
+    int simplex_index;
     double filtration;
 
     Edge(Vertex* uu, Vertex* vv, double filt);
@@ -85,7 +97,7 @@ public:
     double filtration;
 
     std::set<phat::index> faces;
-    std::vector<phat::index> col;
+    // std::vector<phat::index> col;
 
     std::set<phat::index> incident;
     std::set<phat::index> nbrs;
@@ -119,12 +131,12 @@ Simplex::Simplex(std::set<phat::index> f, phat::index i, double filt) {
     filtration = filt;
 
     dim = static_cast<int>(faces.size()-1);
-    set<phat::index>::iterator it;
-    // for (phat::index s : faces) {
-    for (it = faces.begin(); it != faces.end(); ++it) {
-        col.push_back(*it);
-    }
-    std::sort(col.begin(), col.end());
+    // set<phat::index>::iterator it;
+    // // for (phat::index s : faces) {
+    // for (it = faces.begin(); it != faces.end(); ++it) {
+    //     col.push_back(*it);
+    // }
+    // std::sort(col.begin(), col.end());
     //    dim = vertices.size() - 1;
 }
 

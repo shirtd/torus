@@ -23,7 +23,7 @@ SCALE = 1
 # options
 VERTEX = True
 EDGE = True
-FACE = True
+FACE = False
 EDGE_PERS = True
 FACE_PERS = True
 VOL_PERS = True

@@ -19,6 +19,9 @@
 #include <sstream>
 #include <iomanip>
 
+#include <mutex>
+#include <thread>
+
 //#include <complex.h>
 //#include <fftw3.h>
 //#include <sndfile.h>

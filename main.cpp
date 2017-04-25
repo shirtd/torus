@@ -10,6 +10,24 @@
 #include <fstream>
 #include <time.h>
 
+static const int threads = 100;
+
+void _addedge(Graph* graph, vector<Edge*>* added, int t, int j, int k) {
+    int nvertices = graph->vertices.size();
+    if ((j < nvertices) && (k < nvertices)) {
+    // for (int k = j+1; k < nvertices; k++) {
+        Vertex* u = graph->vertices[j];
+        if (!u->is_adjacent(k)) {
+            Vertex* v = graph->vertices[k];
+            // lock_guard<recursive_mutex> vguard(v->mutex);
+            Edge* e = graph->sample_edge(u,v);
+            if (e != nullptr)
+                added->push_back(e);
+        }
+    // }
+    }
+}
+
 int main(int argc, char * argv[]) {
     const char* name;
     if (argc > 1)
@@ -30,7 +48,10 @@ int main(int argc, char * argv[]) {
     double _e = 0.0;
     double _a = 0.0;
 
+    double reso = 20;
+
     if (argc > 2) dim = strtod(argv[2], NULL);
+    if (argc > 3) reso = strtod(argv[3],NULL);
     // if (argc > 2) _e = strtod(argv[3], NULL);
     // if (argc > 3) _a = strtod(argv[4], NULL);
 
@@ -38,9 +59,7 @@ int main(int argc, char * argv[]) {
 
     Graph* graph = new Graph(dim, _e, _a);
 
-    // int nsamples = 14000;
-
-    std::ifstream infile(filename);
+    ifstream infile(filename);
     double x,y,z;
     while (infile >> x >> y >> z) {
         Point<double,3> p;
@@ -48,8 +67,7 @@ int main(int argc, char * argv[]) {
         p[1] = y;
         p[2] = z;
         graph->sample_vertex(p);
-    }
-    infile.close();
+    } infile.close();
 
     int nvertices = graph->vertices.size();
     int nsimplices = graph->simplices.size();
@@ -57,10 +75,14 @@ int main(int argc, char * argv[]) {
     cout << nvertices << " vertices" << endl;
     cout << graph->simplices.size() << " simplices" << endl;
 
-    double added [nvertices][nvertices];
-    for (int i = 0; i < nvertices; i++) {
-        std::fill(added[i], added[i]+nvertices, 0);
-    }
+    // int added [nvertices][nvertices];
+    // for (int i = 0; i < nvertices; i++) {
+    //     std::fill(added[i], added[i]+nvertices, 0);
+    // }
+
+    vector<vector<Edge*>> added(reso);
+
+    std::vector<std::thread> tt(threads);
 
     // REDUNDANT
     // each edge is only added once
@@ -69,7 +91,6 @@ int main(int argc, char * argv[]) {
     clock_t t1,t2;
     t1=clock();
     //code goes here
-    double reso = 20;
     for (int i = 1; i < reso-2; i++) {
         double a = static_cast<double>(i)/(reso);
         cout << "_a = " << a << " ... ";
@@ -77,17 +98,27 @@ int main(int argc, char * argv[]) {
         for (int j = 0; j < nvertices; j++) {
             Vertex* u = graph->vertices[j];
             for (int k = j+1; k < nvertices; k++) {
-                if (added[j][k] != 1) {
-                    Vertex* v = graph->vertices[k];
-                // if (!u->is_adjacent(v))
-                    // graph->sample_edge(u,v);
-                    if (graph->sample_edge(u,v) != nullptr) {
-                        added[j][k] = 1;
-                        added[k][j] = 1;
-                    }
+                Vertex* v = graph->vertices[k];
+                Edge* e = graph->sample_edge(u,v);
+                if (e != nullptr) {
+                    // added[i].push_back(e);
                 }
             }
         }
+
+        // for (int j = 0; j < nvertices; j+=threads) {
+        //     for (int k =j+1; k < nvertices; k+=1) {
+        //         for (int t = 0; t < threads; t++) {
+        //             tt[t] = thread(_addedge, graph, &added[i], t, j+t, k+t);
+        //         }
+        //         for(auto &e : tt) {
+        //             e.join();
+        //         }
+        //     }
+        // }
+
+
+        // cout << added[i].size() << " edges to add; ";
         nsimplices = graph->simplices.size();
         cout << nsimplices << " simplices" << endl;
     }

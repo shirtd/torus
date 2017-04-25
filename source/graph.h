@@ -48,8 +48,8 @@ public:
     Vertex* addvertex(Point<double,3> p);
     Edge* addedge(Vertex* u, Vertex* v);
     Simplex* addsimplex(Vertex* v);
-    Simplex* addsimplex(std::set<phat::index> s);
-    void addcofaces(Simplex* s, std::set<Vertex*> adjacent);
+    Simplex* addsimplex(std::set<phat::index> s, double filt);
+    void addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt);
 
     void write_vertices(char* path);
     void write_edges(char* path);
@@ -57,7 +57,6 @@ public:
     void write_boundary(char* path);
     void write_pairs(char* path);
     void write_stats(char* path);
-
 };
 
 Graph::Graph(int d, double e, double a) {
@@ -100,25 +99,9 @@ Vertex* Graph::addvertex(Point<double,3> p) {
     return v;
 }
 
-
 Edge* Graph::sample_edge(Vertex* u, Vertex* v) {
-    if (u == nullptr || v == nullptr) return nullptr;
-    int i = u->index;
-    int j = v->index;
-    if (i != j) {
-        for (int k = 0; k < static_cast<int>(edges.size()); k++) {
-            Edge* e = edges[k];
-            int ei = e->u->index;
-            int ej = e->v->index;
-            if (((ei == i) && (ej == j)) ||
-                ((ei == j) && (ej == i))) {
-                return nullptr;
-            }
-        }
-
-        // int upc = u->pc();
-        // int vpc = v->pc();
-
+    if ((u == nullptr || v == nullptr) || (u == v)) return nullptr;
+    if (!u->is_adjacent(v)) {
         double d = dist3(u->point,v->point);
         if (d < _a) {
             return addedge(u, v);
@@ -129,27 +112,23 @@ Edge* Graph::sample_edge(Vertex* u, Vertex* v) {
 }
 
 Edge* Graph::addedge(Vertex* u, Vertex* v) {
-    if (u == v) return nullptr;
-    if ((std::find(v->adjacent.begin(), v->adjacent.end(), u) != v->adjacent.end()) && (u != v))
-        return nullptr;
+    double d = dist3(u->point,v->point);
+    Edge* e = new Edge(u, v, d);
 
-    Edge* e = new Edge(u, v, _a);
     u->adjacent.insert(v);
     v->adjacent.insert(u);
     edges.push_back(e);
 
-    // double t = u->time;
-    // if (v->time > t) t = v->time;
-
     set<phat::index> tmp;
     tmp.insert(u->simplex_index);
     tmp.insert(v->simplex_index);
-    Simplex* s = addsimplex(tmp);
+    Simplex* s = addsimplex(tmp, d);
+    e->simplex_index = s->index;
     std::set<Vertex*> adjacent;
     std::set_intersection(u->adjacent.begin(), u->adjacent.end(),
                             v->adjacent.begin(), v->adjacent.end(),
                             std::inserter(adjacent,adjacent.begin()));
-    addcofaces(s,adjacent);
+    addcofaces(s,adjacent,d);
     return e;
 }
 
@@ -161,18 +140,13 @@ Simplex* Graph::addsimplex(Vertex* v) {
          it != v->adjacent.end(); ++it)
         s->nbrs.insert((*it)->simplex_index);
     simplices.push_back(s);
-    boundary_matrix.set_num_cols(simplices.size());
-    boundary_matrix.set_dim(s->index, s->dim);
-    boundary_matrix.set_col(s->index, s->col);
     return s;
 }
 
-Simplex* Graph::addsimplex(std::set<phat::index> f) {
-    Simplex* s = new Simplex(f, simplices.size(), _a);
-    // for (phat::index i : s.faces) {
+Simplex* Graph::addsimplex(std::set<phat::index> f, double filt) {
+    Simplex* s = new Simplex(f, simplices.size(), filt);
     set<phat::index>::iterator it;
     for(it = s->faces.begin(); it != s->faces.end(); ++it) {
-        // for (int j : simplices[i].vertices)
         set<Vertex*>::iterator vt;
         for (vt = simplices[*it]->vertices.begin();
              vt != simplices[*it]->vertices.end(); ++vt)
@@ -183,29 +157,23 @@ Simplex* Graph::addsimplex(std::set<phat::index> f) {
     }
 
     if (s->vertices.size() == s->dim+1) {
-        // for (phat::index i : s.faces)
         set<phat::index>::iterator it;
         for (it = s->faces.begin(); it != s->faces.end(); ++it)
             simplices[simplices[*it]->index]->incident.insert(s->index);
 
         simplices.push_back(s);
-        boundary_matrix.set_num_cols(simplices.size());
-        boundary_matrix.set_dim(s->index, s->dim);
-        boundary_matrix.set_col(s->index, s->col);
     }
 
     return s;
 }
 
-void Graph::addcofaces(Simplex* s, std::set<Vertex*> adjacent) {
+void Graph::addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt) {
     if (s->dim >= dim) return;
 
-    // std::vector<std::vector<Simplex>> chain;
-    // for (int i : adjacent) {
     set<Vertex*>::iterator adjit;
     for (adjit = adjacent.begin(); adjit != adjacent.end(); ++adjit) {
         std::set<phat::index> tmp;
-        // for (phat::index j : s.nbrs) {
+
         set<phat::index>::iterator nbrit;
         for (nbrit = s->nbrs.begin(); nbrit != s->nbrs.end(); ++nbrit) {
             if (simplices[*nbrit]->contains_vertex(*adjit))
@@ -214,19 +182,32 @@ void Graph::addcofaces(Simplex* s, std::set<Vertex*> adjacent) {
 
         if (tmp.size() == s->dim+1) {
             tmp.insert(s->index);
-            Simplex* t = addsimplex(tmp);
+            Simplex* t = addsimplex(tmp, filt);
             if (t->vertices.size() != t->dim+1) return;
             std::set<Vertex*> adj;
             std::set_intersection(adjacent.begin(), adjacent.end(),
                            (*adjit)->adjacent.begin(), (*adjit)->adjacent.end(),
                            std::inserter(adj,adj.begin()));
-            addcofaces(t, adj);
+            addcofaces(t, adj, filt);
         }
-
     }
 }
 
 void Graph::persist() {
+    int nsimplices = simplices.size();
+    boundary_matrix.set_num_cols(nsimplices);
+    for (int i = 0; i < nsimplices; i++) {
+        Simplex* s = simplices[i];
+        vector<phat::index> col;
+        set<phat::index>::iterator it;
+        // for (phat::index s : faces) {
+        for (it = s->faces.begin(); it != s->faces.end(); ++it)
+            col.push_back(*it);
+        std::sort(col.begin(), col.end());
+        boundary_matrix.set_dim(s->index, s->dim);
+        boundary_matrix.set_col(s->index, col);
+    }
+
     // choose an algorithm (choice affects performance) and compute the persistence pair
     // (modifies boundary_matrix)
     phat::compute_persistence_pairs< phat::twist_reduction >( pairs, boundary_matrix);
@@ -369,33 +350,28 @@ void Graph::write(const char* file) {
     //     // delete [] path;
     // }
     //
-    // string norm_pair_string = "pairs_norm";
-    // const char* file_name = norm_pair_string.c_str();
-    // path_length = strlen(file_dir)+strlen(file_name)+strlen(ext)+1;
-    // path = new char [path_length];
-    // strcpy(path, file_dir);
+    string filt_pair_string = "pairs_filt";
+    string file_name_string = "/"+filt_pair_string+ext_string;
+    // const char* file_name = file_strings[j].c_str();
+    const char* file_name = file_name_string.c_str();
+    path_length = strlen(file_dir)+strlen(file_name);
+    // char* path = new char [path_length]();
+    char path [path_length];
+    strcpy(path, file_dir);
     // strcat(path, "/");
-    // strcat(path, file_name);
-    // strcat(path, ext);
-    //
-    // double nsimplices = simplices.size();
-    //
-    // ofstream myfile;
-    // myfile.open(path);
-    // for (int k = 0; k < pairs.get_num_pairs(); k++) {
-    //     int birthi = pairs.get_pair(k).first;
-    //     int deathi = pairs.get_pair(k).second;
-    //     // if (simplices[birthi]->pc() == simplices[deathi]->pc()) {
-    //     double birth = static_cast<double>(birthi)/nsimplices;
-    //     double death = static_cast<double>(deathi)/nsimplices;
-    //     // double thresh = static_cast<double>(simplices[deathi]->dim)/nsimplices;
-    //     // if (death - birth > thresh)
-    //     //     myfile << birth << " " << death << "\n";
-    //     myfile << birth << " " << death << "\n";
-    //     // }
-    //
-    // }
-    // myfile.close();
+    strcat(path, file_name);
+
+    ofstream myfile;
+    myfile.open(path);
+    for (int k = 0; k < pairs.get_num_pairs(); k++) {
+        int birthi = pairs.get_pair(k).first;
+        int deathi = pairs.get_pair(k).second;
+        double birth_filt = simplices[birthi]->filtration;
+        double death_filt = simplices[deathi]->filtration;
+        if (death_filt - birth_filt > 0.01)
+            myfile << birth_filt << " " << death_filt << "\n";
+    }
+    myfile.close();
 
     // delete [] path;
 }
