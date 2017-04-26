@@ -17,7 +17,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import sys
 import time
 
-MIN_PERS = 0.01
+MIN_PERS = 0.1
 SCALE = 1
 
 # options
@@ -109,59 +109,59 @@ def pers(pairs, a_last, a):
     for pair in pairs:
         birth = pair.birth
         death = pair.death
-        birth_norm = pair.birth_norm
-        death_norm = pair.death_norm
+        birth_filt = pair.birth.filtration
+        death_filt = pair.death.filtration
         # if (death.time - birth.time > 0):
         #     pairs_time += [(birth.time,death.time)]
-        if (death_norm - birth_norm < MIN_PERS):
+        if (death_filt - birth_filt < MIN_PERS):
             noise += 1
         elif (a_last < death.filtration) and (death.filtration <= a):
             features += 1
-            opac = 0.2 + 4*(pair.death_norm - pair.birth_norm)/5
+            opac = 0.2 + 4*(death_filt - birth_filt)/5
             sze = 30*death.dim**2
             if (death.dim == 1) and EDGE_PERS:
                 if BARCODE:
                     # pax.plot([T[birth],T[death]],[i,i],color=colors[itop[birth]])
-                    pax.plot([birth_norm,death_norm],[death_norm,death_norm])
+                    pax.plot([birth_filt,death_filt],[death_filt,death_filt])
                 else :
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
                     clr = [0,1,0,opac]
-                    pax.scatter(birth_norm,death_norm,marker='x',color=clr,s=sze)
+                    pax.scatter(birth_filt,death_filt,marker='x',color=clr,s=sze)
                     if BANDD:
-                        pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
+                        pax.plot([birth_filt,death_filt],[death_filt,birth_filt])
                 i += 1
             elif (death.dim == 2) and FACE_PERS:
                 if BARCODE:
                     # pax.plot([T[birth],T[death]],[i,i],color=colors[itop[birth]])
-                    pax.plot([birth_norm,death_norm],[death_norm,death_norm])
+                    pax.plot([birth_filt,death_filt],[death_filt,death_filt])
                 else :
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
                     clr = [1,0,0,opac]
-                    pax.scatter(birth_norm,death_norm,marker='^',color=clr,s=sze)
+                    pax.scatter(birth_filt,death_filt,marker='^',color=clr,s=sze)
                     if BANDD:
-                        pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
+                        pax.plot([birth_filt,death_filt],[death_filt,birth_filt])
                 i += 1
             elif (death.dim == 3) and VOL_PERS:
                 if BARCODE:
                     # pax.plot([T[birth],T[death]],[i,i],color=colors[itop[birth]])
-                    pax.plot([birth_norm,death_norm],[death_norm,death_norm])
+                    pax.plot([birth_filt,death_filt],[death_filt,death_filt])
                 else :
                     clr = [0,0,1,opac]
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=sze)
+                    pax.scatter(birth_filt,death_filt,marker='o',color=clr,s=sze)
                     if BANDD:
-                        pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
+                        pax.plot([birth_filt,death_filt],[death_filt,birth_filt])
                 i += 1
             elif (death.dim > 3):
                 if BARCODE:
                     # pax.plot([T[birth],T[death]],[i,i],color=colors[itop[birth]])
-                    pax.plot([birth_norm,death_norm],[death_norm,death_norm])
+                    pax.plot([birth_filt,death_filt],[death_filt,death_filt])
                 else :
                     clr = [0,1,0,opac]
                     # pax.scatter(birth,death,color=colors[itop[birth]],marker='x')
-                    pax.scatter(birth_norm,death_norm,marker='o',color=clr,s=sze)
+                    pax.scatter(birth_filt,death_filt,marker='o',color=clr,s=sze)
                     if BANDD:
-                        pax.plot([birth_norm,death_norm],[death_norm,birth_norm])
+                        pax.plot([birth_filt,death_filt],[death_filt,birth_filt])
                 i += 1
             del_pair += [pair]
 
@@ -272,7 +272,7 @@ def import_file(dir_name):
                 print("ERROR(pairs)@"+member)
         # pcs = [birth.pcs[i]+death.pcs[i] for i in range(min(len(birth.pcs),len(death.pcs)))]
         pair = Pair(birth,death,nsimplices)
-        if (pair.death_norm - pair.birth_norm >= MIN_PERS):
+        if (pair.death.filtration - pair.birth.filtration >= MIN_PERS):
             pairs += [pair]
 
     npairs = len(pairs)

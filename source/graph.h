@@ -45,9 +45,6 @@ public:
 
     void write(const char* file);
 
-    Simplex* gensimplex(std::set<int> s, double filt);
-    vector<Simplex*> getcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt);
-
     void addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt);
 
  private:
@@ -56,6 +53,8 @@ public:
     Edge* addedge(Vertex* u, Vertex* v);
     Simplex* addsimplex(Vertex* v);
     Simplex* addsimplex(std::set<int> s, double filt);
+
+    // bool check(set<int> f);
 
     void write_vertices(char* path);
     void write_edges(char* path);
@@ -138,43 +137,35 @@ Edge* Graph::addedge(Vertex* u, Vertex* v) {
     return e;
 }
 
-Simplex* Graph::gensimplex(std::set<int> f, double filt) {
-    Simplex* s = new Simplex(f, -1, filt);
-    set<int>::iterator it;
-    for(it = s->faces.begin(); it != s->faces.end(); ++it) {
-        set<Vertex*>::iterator vt;
-        for (vt = simplices[*it]->vertices.begin();
-             vt != simplices[*it]->vertices.end(); ++vt)
-            s->vertices.insert(*vt);
-        std::set_union(s->nbrs.begin(), s->nbrs.end(),
-                       simplices[*it]->incident.begin(), simplices[*it]->incident.end(),
-                       std::inserter(s->nbrs, s->nbrs.begin()));
-    }
-
-    if (s->vertices.size() == s->dim+1) {
-        set<int>::iterator it;
-        for (it = s->faces.begin(); it != s->faces.end(); ++it)
-            simplices[simplices[*it]->index]->incident.insert(s->index);
-
-        // simplices.push_back(s);
-    }
-
-    return s;
-}
+// bool Graph::check(set<int> f) {
+//     set<int>::iterator fit;
+//     for(fit = f.begin(); fit != f.end(); ++fit) {
+//         Simplex* t = simplices[*fit];
+//         bool seent = false;
+//         set<int>::iterator nit;
+//         for(nit = t->nbrs.begin(); nit != t->nbrs.end(); ++nit) {
+//             if (*nit == *fit)
+//                 seent = true;
+//         }
+//         if (!seent) return true;
+//     }
+//     return false;
+// }
 
 Simplex* Graph::addsimplex(Vertex* v) {
     Simplex* s = new Simplex(v, simplices.size());
     // for (int i : vertices[i].adjacent)
-    set<Vertex*>::iterator it;
-    for (it = v->adjacent.begin();
-         it != v->adjacent.end(); ++it)
-        s->nbrs.insert((*it)->simplex_index);
+    // set<Vertex*>::iterator it;
+    // for (it = v->adjacent.begin();
+    //      it != v->adjacent.end(); ++it)
+    //     s->nbrs.insert((*it)->simplex_index);
     // lock_guard<mutex> guard(mutex);
     simplices.push_back(s);
     return s;
 }
 
 Simplex* Graph::addsimplex(std::set<int> f, double filt) {
+    // if (!check(f)) cout << "double!" << endl;
     Simplex* s = new Simplex(f, simplices.size(), filt);
     // lock_guard<mutex> block_threads_until_finish_this_job(mtx);
     set<int>::iterator it;
@@ -236,38 +227,6 @@ void Graph::addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt) {
         }
     }
 }
-
-// vector<Simplex*> Graph::getcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt) {
-//     vector<Simplex*> toadd;
-//     if (s->dim >= dim) return toadd;
-//
-//     set<Vertex*>::iterator adjit;
-//     for (adjit = adjacent.begin(); adjit != adjacent.end(); ++adjit) {
-//         std::set<int> tmp;
-//
-//         set<int>::iterator nbrit;
-//         for (nbrit = s->nbrs.begin(); nbrit != s->nbrs.end(); ++nbrit) {
-//             if (simplices[*nbrit]->contains_vertex(*adjit))
-//                 tmp.insert(*nbrit);
-//         }
-//
-//         if (tmp.size() == s->dim+1) {
-//             tmp.insert(s->index);
-//             Simplex* t = gensimplex(tmp, filt);
-//             if (t->vertices.size() != t->dim+1) return toadd;
-//             toadd.push_back(t);
-//             std::set<Vertex*> adj;
-//             std::set_intersection(adjacent.begin(), adjacent.end(),
-//                            (*adjit)->adjacent.begin(), (*adjit)->adjacent.end(),
-//                            std::inserter(adj,adj.begin()));
-//             vector<Simplex*> _toadd = getcofaces(t, adj, filt);
-//             toadd.insert(toadd.end(), _toadd.begin(), _toadd.end());
-//             return toadd;
-//         }
-//     }
-//
-//     return toadd;
-// }
 
 void Graph::persist() {
     int nsimplices = simplices.size();
