@@ -9,22 +9,22 @@
 #include "graph.h"
 #include <fstream>
 #include <time.h>
+#include <chrono>
 
-static const int threads = 100;
+static const int threads = 8;
 
-void _addedge(Graph* graph, vector<Edge*>* added, int t, int j, int k) {
-    int nvertices = graph->vertices.size();
-    if ((j < nvertices) && (k < nvertices)) {
-    // for (int k = j+1; k < nvertices; k++) {
-        Vertex* u = graph->vertices[j];
-        if (!u->is_adjacent(k)) {
-            Vertex* v = graph->vertices[k];
-            // lock_guard<recursive_mutex> vguard(v->mutex);
-            Edge* e = graph->sample_edge(u,v);
-            if (e != nullptr)
-                added->push_back(e);
-        }
-    // }
+void _addcofaces(Graph* graph, vector<Edge*> toadd, int t, int j) {
+// void _addcofaces(Graph* graph, Edge* e) {
+    if (j < toadd.size()) {
+        Edge* e = toadd[j];
+        Simplex* s = graph->simplices[e->simplex_index];
+        Vertex* u = e->u;
+        Vertex* v = e->v;
+        std::set<Vertex*> adjacent;
+        std::set_intersection(u->adjacent.begin(), u->adjacent.end(),
+                                v->adjacent.begin(), v->adjacent.end(),
+                                std::inserter(adjacent,adjacent.begin()));
+        graph->addcofaces(s, adjacent, e->filtration);
     }
 }
 
@@ -88,8 +88,9 @@ int main(int argc, char * argv[]) {
     // each edge is only added once
     // -> generates cofaces
     // maintain a list of (2^nvertices) pairs ?
-    clock_t t1,t2;
-    t1=clock();
+    // clock_t t1,t2;
+    // t1=clock();
+    auto start = chrono::steady_clock::now();
     //code goes here
     for (int i = 1; i < reso-2; i++) {
         double a = static_cast<double>(i)/(reso);
@@ -101,11 +102,12 @@ int main(int argc, char * argv[]) {
                 Vertex* v = graph->vertices[k];
                 Edge* e = graph->sample_edge(u,v);
                 if (e != nullptr) {
-                    // added[i].push_back(e);
+                    added[i].push_back(e);
                 }
             }
         }
 
+        // <editor-fold>
         // for (int j = 0; j < nvertices; j+=threads) {
         //     for (int k =j+1; k < nvertices; k+=1) {
         //         for (int t = 0; t < threads; t++) {
@@ -116,25 +118,47 @@ int main(int argc, char * argv[]) {
         //         }
         //     }
         // }
+        // </editor-fold>
 
+        cout << added[i].size() << " edges to add; ";
 
-        // cout << added[i].size() << " edges to add; ";
+        for (int j = 0; j < added[i].size(); j+=threads) {
+            for (int t = 0; t < threads-1; t++)
+                tt[t] = thread(_addcofaces, graph, added[i], t, j+t);
+            _addcofaces(graph, added[i], threads-1, j+threads-1);
+            for(int t = 0; t < threads-1; t++) {
+                if (tt[t].joinable())
+                    tt[t].join();
+            }
+            // Edge* e = added[i][j];
+            // Simplex* s = graph->simplices[e->simplex_index];
+            // Vertex* u = e->u;
+            // Vertex* v = e->v;
+            // std::set<Vertex*> adjacent;
+            // std::set_intersection(u->adjacent.begin(), u->adjacent.end(),
+            //                         v->adjacent.begin(), v->adjacent.end(),
+            //                         std::inserter(adjacent,adjacent.begin()));
+            // graph->addcofaces(s, adjacent, e->filtration);
+        }
+
         nsimplices = graph->simplices.size();
         cout << nsimplices << " simplices" << endl;
     }
 
-    t2=clock();
-    float diff ((float)t2-(float)t1);
-    float seconds = diff / CLOCKS_PER_SEC;
-    cout << "build: " << seconds << " seconds" << endl;
+    auto end = chrono::steady_clock::now();
+    double elapsed = chrono::duration_cast<chrono::duration<double> >(end - start).count();
+    // float diff ((float)t2-(float)t1);
+    // float seconds = diff / CLOCKS_PER_SEC;
+    cout << "build: " << elapsed << " seconds" << endl;
 
+    clock_t t1,t2;
     t1=clock();
 
     graph->persist();
 
     t2=clock();
-    diff = ((float)t2-(float)t1);
-    seconds = diff / CLOCKS_PER_SEC;
+    float diff = ((float)t2-(float)t1);
+    float seconds = diff / CLOCKS_PER_SEC;
     cout << "persist: " << seconds << " seconds" << endl;
 
     t1=clock();

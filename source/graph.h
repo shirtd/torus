@@ -11,10 +11,10 @@
 
 #include "simplex.h"
 
-typedef pair<phat::index,phat::index> pair_t;
+typedef pair<int,int> pair_t;
 
 struct feature_t {
-    phat::index index;
+    int index;
     pair_t pair;
 };
 
@@ -33,6 +33,8 @@ public:
     phat::persistence_pairs pairs;
     vector<feature_t> features;
 
+    mutex mtx;
+
     Graph(int d, double e, double a);
     ~Graph();
 
@@ -43,13 +45,17 @@ public:
 
     void write(const char* file);
 
+    Simplex* gensimplex(std::set<int> s, double filt);
+    vector<Simplex*> getcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt);
+
+    void addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt);
+
  private:
 
     Vertex* addvertex(Point<double,3> p);
     Edge* addedge(Vertex* u, Vertex* v);
     Simplex* addsimplex(Vertex* v);
-    Simplex* addsimplex(std::set<phat::index> s, double filt);
-    void addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt);
+    Simplex* addsimplex(std::set<int> s, double filt);
 
     void write_vertices(char* path);
     void write_edges(char* path);
@@ -119,33 +125,22 @@ Edge* Graph::addedge(Vertex* u, Vertex* v) {
     v->adjacent.insert(u);
     edges.push_back(e);
 
-    set<phat::index> tmp;
+    set<int> tmp;
     tmp.insert(u->simplex_index);
     tmp.insert(v->simplex_index);
     Simplex* s = addsimplex(tmp, d);
     e->simplex_index = s->index;
-    std::set<Vertex*> adjacent;
-    std::set_intersection(u->adjacent.begin(), u->adjacent.end(),
-                            v->adjacent.begin(), v->adjacent.end(),
-                            std::inserter(adjacent,adjacent.begin()));
-    addcofaces(s,adjacent,d);
+    // std::set<Vertex*> adjacent;
+    // std::set_intersection(u->adjacent.begin(), u->adjacent.end(),
+    //                         v->adjacent.begin(), v->adjacent.end(),
+    //                         std::inserter(adjacent,adjacent.begin()));
+    // addcofaces(s,adjacent,d);
     return e;
 }
 
-Simplex* Graph::addsimplex(Vertex* v) {
-    Simplex* s = new Simplex(v, simplices.size());
-    // for (int i : vertices[i].adjacent)
-    set<Vertex*>::iterator it;
-    for (it = v->adjacent.begin();
-         it != v->adjacent.end(); ++it)
-        s->nbrs.insert((*it)->simplex_index);
-    simplices.push_back(s);
-    return s;
-}
-
-Simplex* Graph::addsimplex(std::set<phat::index> f, double filt) {
-    Simplex* s = new Simplex(f, simplices.size(), filt);
-    set<phat::index>::iterator it;
+Simplex* Graph::gensimplex(std::set<int> f, double filt) {
+    Simplex* s = new Simplex(f, -1, filt);
+    set<int>::iterator it;
     for(it = s->faces.begin(); it != s->faces.end(); ++it) {
         set<Vertex*>::iterator vt;
         for (vt = simplices[*it]->vertices.begin();
@@ -157,11 +152,58 @@ Simplex* Graph::addsimplex(std::set<phat::index> f, double filt) {
     }
 
     if (s->vertices.size() == s->dim+1) {
-        set<phat::index>::iterator it;
+        set<int>::iterator it;
         for (it = s->faces.begin(); it != s->faces.end(); ++it)
             simplices[simplices[*it]->index]->incident.insert(s->index);
 
+        // simplices.push_back(s);
+    }
+
+    return s;
+}
+
+Simplex* Graph::addsimplex(Vertex* v) {
+    Simplex* s = new Simplex(v, simplices.size());
+    // for (int i : vertices[i].adjacent)
+    set<Vertex*>::iterator it;
+    for (it = v->adjacent.begin();
+         it != v->adjacent.end(); ++it)
+        s->nbrs.insert((*it)->simplex_index);
+    // lock_guard<mutex> guard(mutex);
+    simplices.push_back(s);
+    return s;
+}
+
+Simplex* Graph::addsimplex(std::set<int> f, double filt) {
+    Simplex* s = new Simplex(f, simplices.size(), filt);
+    // lock_guard<mutex> block_threads_until_finish_this_job(mtx);
+    set<int>::iterator it;
+    for(it = s->faces.begin(); it != s->faces.end(); ++it) {
+        Simplex* t = simplices[*it];
+
+        t->add_vertices_to(s);
+        // set<Vertex*>::iterator vt;
+        // for (vt = t->vertices.begin();
+        //      vt != t->vertices.end(); ++vt)
+        //     s->vertices.insert(*vt);
+
+        t->add_incident_to(s);
+        // std::set_union(s->nbrs.begin(), s->nbrs.end(),
+        //                t->incident.begin(), t->incident.end(),
+        //                std::inserter(s->nbrs, s->nbrs.begin()));
+    }
+
+    if (s->vertices.size() == s->dim+1) {
+        set<int>::iterator it;
+        for (it = s->faces.begin(); it != s->faces.end(); ++it) {
+            Simplex* t = simplices[*it];
+
+            t->add_incident(s->index);
+            // t->incident.insert(s->index);
+        }
+        mtx.lock();
         simplices.push_back(s);
+        mtx.unlock();
     }
 
     return s;
@@ -169,19 +211,21 @@ Simplex* Graph::addsimplex(std::set<phat::index> f, double filt) {
 
 void Graph::addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt) {
     if (s->dim >= dim) return;
-
+    // lock_guard<recursive_mutex> lock(s->mtx);
     set<Vertex*>::iterator adjit;
     for (adjit = adjacent.begin(); adjit != adjacent.end(); ++adjit) {
-        std::set<phat::index> tmp;
-
-        set<phat::index>::iterator nbrit;
+        // std::set<int> tmp = s->nbrs_containing(*adjit, simplices);
+        s->mtx.lock();
+        std::set<int> tmp;
+        set<int>::iterator nbrit;
         for (nbrit = s->nbrs.begin(); nbrit != s->nbrs.end(); ++nbrit) {
             if (simplices[*nbrit]->contains_vertex(*adjit))
                 tmp.insert(*nbrit);
         }
-
+        s->mtx.unlock();
         if (tmp.size() == s->dim+1) {
             tmp.insert(s->index);
+            // lock_guard<std::mtx> block_threads_until_finish_this_job(mtx);
             Simplex* t = addsimplex(tmp, filt);
             if (t->vertices.size() != t->dim+1) return;
             std::set<Vertex*> adj;
@@ -193,16 +237,48 @@ void Graph::addcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt) {
     }
 }
 
+// vector<Simplex*> Graph::getcofaces(Simplex* s, std::set<Vertex*> adjacent, double filt) {
+//     vector<Simplex*> toadd;
+//     if (s->dim >= dim) return toadd;
+//
+//     set<Vertex*>::iterator adjit;
+//     for (adjit = adjacent.begin(); adjit != adjacent.end(); ++adjit) {
+//         std::set<int> tmp;
+//
+//         set<int>::iterator nbrit;
+//         for (nbrit = s->nbrs.begin(); nbrit != s->nbrs.end(); ++nbrit) {
+//             if (simplices[*nbrit]->contains_vertex(*adjit))
+//                 tmp.insert(*nbrit);
+//         }
+//
+//         if (tmp.size() == s->dim+1) {
+//             tmp.insert(s->index);
+//             Simplex* t = gensimplex(tmp, filt);
+//             if (t->vertices.size() != t->dim+1) return toadd;
+//             toadd.push_back(t);
+//             std::set<Vertex*> adj;
+//             std::set_intersection(adjacent.begin(), adjacent.end(),
+//                            (*adjit)->adjacent.begin(), (*adjit)->adjacent.end(),
+//                            std::inserter(adj,adj.begin()));
+//             vector<Simplex*> _toadd = getcofaces(t, adj, filt);
+//             toadd.insert(toadd.end(), _toadd.begin(), _toadd.end());
+//             return toadd;
+//         }
+//     }
+//
+//     return toadd;
+// }
+
 void Graph::persist() {
     int nsimplices = simplices.size();
     boundary_matrix.set_num_cols(nsimplices);
     for (int i = 0; i < nsimplices; i++) {
         Simplex* s = simplices[i];
         vector<phat::index> col;
-        set<phat::index>::iterator it;
-        // for (phat::index s : faces) {
+        set<int>::iterator it;
+        // for (int s : faces) {
         for (it = s->faces.begin(); it != s->faces.end(); ++it)
-            col.push_back(*it);
+            col.push_back(static_cast<phat::index>(*it));
         std::sort(col.begin(), col.end());
         boundary_matrix.set_dim(s->index, s->dim);
         boundary_matrix.set_col(s->index, col);
@@ -216,7 +292,7 @@ void Graph::persist() {
     // pairs.sort();
 
     // int count = 0;
-    for( phat::index idx = 0; idx < pairs.get_num_pairs(); idx++ ) {
+    for( int idx = 0; idx < pairs.get_num_pairs(); idx++ ) {
         pair_t pair = pairs.get_pair(idx);
         if (pair.second - pair.first > PERS_THRESH) {
             feature_t feature;
@@ -227,6 +303,7 @@ void Graph::persist() {
     }
 }
 
+// <editor-fold> write
 void Graph::write(const char* file) {
     string data_dir_string = "data/";
     const char* data_dir = data_dir_string.c_str();
@@ -413,7 +490,7 @@ void Graph::write_simplices(char* path) {
             "dim(" << s->dim << ")" << i_DELIM <<
             "faces(";
         int j = 0;
-        set<phat::index>::iterator it;
+        set<int>::iterator it;
         for (it = s->faces.begin(); it != s->faces.end(); ++it) {
             myfile << (*it);
             if (j < s->faces.size()-1) myfile << j_DELIM;
@@ -496,6 +573,8 @@ void Graph::write_pairs(char* path) {
 //
 //     myfile.close();
 // }
+
+// </editor-fold> write
 
 
 #endif /* graph_h */

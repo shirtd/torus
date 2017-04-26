@@ -21,6 +21,7 @@
 
 #include <mutex>
 #include <thread>
+#include <condition_variable>
 
 //#include <complex.h>
 //#include <fftw3.h>
