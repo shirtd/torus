@@ -2,3 +2,5 @@ data
 build
 *.mp4
 *.dSYM
+.DS_Store
+samples
