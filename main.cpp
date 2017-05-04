@@ -93,6 +93,7 @@ int main(int argc, char * argv[]) {
     auto start = chrono::steady_clock::now();
     //code goes here
     for (int i = 1; i < reso-2; i++) {
+
         double a = static_cast<double>(i)/(reso);
         cout << "_a = " << a << " ... ";
         graph->_a = a;

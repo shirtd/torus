@@ -319,6 +319,9 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
             verticalalignment='top',
             transform=pax.transAxes)
 
+
+    # pax.scatter([0.0,0.0],[0.2,0.8],marker='o',color=[0,0,1,1],s=50)
+
     # png_path = dir_name+"plot"+".png"
     png_path = "data/"+str(name)+"-"
     if (count < 10):
@@ -331,6 +334,7 @@ def draw(name, vertices, edges, simplices, pairs, count, a_last, a):
         png_path += "00"
     elif (count < 100000):
         png_path += "0"
+
 
     png_path += str(count)+".png"
     print("saving "+png_path)

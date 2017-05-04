@@ -404,7 +404,7 @@ void Graph::write(const char* file) {
         int deathi = pairs.get_pair(k).second;
         double birth_filt = simplices[birthi]->filtration;
         double death_filt = simplices[deathi]->filtration;
-        if (death_filt - birth_filt > 0.01)
+        if (death_filt - birth_filt > 0.1)
             myfile << birth_filt << " " << death_filt << "\n";
     }
     myfile.close();
